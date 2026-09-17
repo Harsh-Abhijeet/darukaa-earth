@@ -1,0 +1,67 @@
+services:
+  # ============================================================================
+  # Database Tier: PostgreSQL 16 with pgvector Extension
+  # ============================================================================
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: darukaa_pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: darukaa_earth
+      POSTGRES_USER: darukaa
+      POSTGRES_PASSWORD: darukaa_earth_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U darukaa -d darukaa_earth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Application Tier: FastAPI Backend & LangGraph Agent Engine
+  # ============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: darukaa_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://darukaa:darukaa_earth_secret@db:5432/darukaa_earth
+      - DATABASE_SYNC_URL=postgresql+psycopg2://darukaa:darukaa_earth_secret@db:5432/darukaa_earth
+      - ENABLE_SQLITE_FALLBACK=true
+      - SQLITE_PATH=darukaa_local.db
+      - ENVIRONMENT=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./knowledge_base:/app/knowledge_base:ro
+
+  # ============================================================================
+  # Presentation Tier: Streamlit Interactive UI
+  # ============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: darukaa_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://backend:8000
+    ports:
+      - "8501:8501"
+
+volumes:
+  pgdata:
+    driver: local
