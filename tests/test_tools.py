@@ -7,13 +7,21 @@ from backend.app.tools.biodiversity_tool import get_biodiversity_data_sync
 from backend.app.tools.land_use_tool import analyze_land_use_configuration
 
 
-def test_soil_tool_fallback():
+def test_soil_tool_fallback(monkeypatch):
+    def force_soilgrids_failure(*args, **kwargs):
+        raise RuntimeError("Simulated SoilGrids API failure")
+
+    monkeypatch.setattr(
+        "backend.app.tools.soil_tool.fetch_soilgrids_data",
+        force_soilgrids_failure
+    )
+
     data = get_soil_data_sync(latitude=19.07, longitude=73.00)
+
     assert "ph" in data
     assert "organic_carbon" in data
     assert data["is_fallback"] is True
     assert "ISRIC" in data["data_source"]
-
 
 def test_climate_tool_fallback():
     data = get_climate_data_sync(latitude=19.07, longitude=73.00)

@@ -22,7 +22,11 @@ CORE_VARIABLES = [
 
 
 def extract_variables_from_text(text_input: str) -> Dict[str, Any]:
-    """Extracts numeric and categorical environmental variables from natural language text using regex and heuristics."""
+    """Extract environmental variables from natural-language text.
+
+    Supports multiple natural-language patterns for numeric and categorical
+    environmental variables while preserving the existing nested schema.
+    """
     extracted: Dict[str, Any] = {
         "soil": {},
         "climate": {},
@@ -30,89 +34,256 @@ def extract_variables_from_text(text_input: str) -> Dict[str, Any]:
         "biodiversity": {},
         "location": {}
     }
+
     t = text_input.lower()
 
-    # 1. Soil Organic Carbon
-    # Matches "organic carbon is 0.3%", "soc = 0.3", "soc 0.4%", "0.3% organic carbon"
-    soc_match = re.search(r'(?:organic carbon|soc|carbon content)\s*(?:is|=|:)?\s*([0-9]+(?:\.[0-9]+)?)\s*%', t)
-    if not soc_match:
-        soc_match = re.search(r'([0-9]+(?:\.[0-9]+)?)\s*%\s*(?:organic carbon|soc)', t)
-    if not soc_match:
-        soc_match = re.search(r'(?:soc|organic carbon)\s*(?:is|=|:)?\s*([0-9]+(?:\.[0-9]+)?)', t)
-    if soc_match:
-        try:
-            extracted["soil"]["organic_carbon"] = float(soc_match.group(1))
-        except ValueError:
-            pass
+    # ---------------------------------------------------------
+    # 1. Soil Organic Carbon (SOC)
+    # ---------------------------------------------------------
+    soc_patterns = [
+        r'(?:soil\s+organic\s+carbon|organic\s+carbon|soc|carbon\s+content)'
+        r'\s*(?:is|=|:|of|at)?\s*([0-9]+(?:\.[0-9]+)?)\s*%',
 
+        r'([0-9]+(?:\.[0-9]+)?)\s*%\s*'
+        r'(?:soil\s+organic\s+carbon|organic\s+carbon|soc|carbon\s+content)'
+    ]
+
+    for pattern in soc_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["soil"]["organic_carbon"] = float(match.group(1))
+                break
+            except ValueError:
+                pass
+
+    # ---------------------------------------------------------
     # 2. Soil pH
-    ph_match = re.search(r'(?:ph|soil ph)\s*(?:is|=|:)?\s*([0-9]+(?:\.[0-9]+)?)', t)
-    if ph_match:
-        try:
-            extracted["soil"]["ph"] = float(ph_match.group(1))
-        except ValueError:
-            pass
+    # ---------------------------------------------------------
+    ph_patterns = [
+        r'(?:soil\s+ph|ph)\s*(?:is|=|:|of|at)?\s*([0-9]+(?:\.[0-9]+)?)',
+        r'ph\s+value\s*(?:is|=|:)?\s*([0-9]+(?:\.[0-9]+)?)'
+    ]
 
+    for pattern in ph_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["soil"]["ph"] = float(match.group(1))
+                break
+            except ValueError:
+                pass
+
+    # ---------------------------------------------------------
     # 3. Soil Moisture
-    moisture_match = re.search(r'(?:moisture|soil moisture)\s*(?:is|=|:)?\s*([0-9]+(?:\.[0-9]+)?)\s*%', t)
-    if not moisture_match:
-        moisture_match = re.search(r'([0-9]+(?:\.[0-9]+)?)\s*%\s*(?:moisture|soil moisture)', t)
-    if moisture_match:
-        try:
-            extracted["soil"]["moisture"] = float(moisture_match.group(1))
-        except ValueError:
-            pass
+    # ---------------------------------------------------------
+    moisture_patterns = [
+        r'(?:soil\s+moisture|moisture)\s*'
+        r'(?:is|=|:|of|at)?\s*([0-9]+(?:\.[0-9]+)?)\s*%',
 
+        r'([0-9]+(?:\.[0-9]+)?)\s*%\s*'
+        r'(?:soil\s+moisture|moisture)'
+    ]
+
+    for pattern in moisture_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["soil"]["moisture"] = float(match.group(1))
+                break
+            except ValueError:
+                pass
+
+    # ---------------------------------------------------------
     # 4. Rainfall / Precipitation
-    # Matches "rainfall is around 500mm", "precip 540 mm", "500mm rainfall"
-    rain_match = re.search(r'(?:rainfall|precipitation|rain)\s*(?:is\s+around|is\s+about|is|around|about|=|:)?\s*([0-9]+(?:\.[0-9]+)?)\s*mm', t)
-    if not rain_match:
-        rain_match = re.search(r'([0-9]+(?:\.[0-9]+)?)\s*mm\s*(?:rainfall|rain|precipitation)', t)
-    if not rain_match:
-        rain_match = re.search(r'(?:rainfall|precipitation|rain)\s*(?:is\s+around|is\s+about|is|around|about|=|:)?\s*([0-9]+(?:\.[0-9]+)?)', t)
-    if rain_match:
-        try:
-            extracted["climate"]["rainfall"] = float(rain_match.group(1))
-        except ValueError:
-            pass
+    # ---------------------------------------------------------
+    rain_patterns = [
+        # "rainfall is around 500mm"
+        # "annual rainfall is about 540 mm"
+        # "rainfall of 500 mm"
+        # "rainfall around 500 mm"
+        r'(?:annual\s+)?(?:rainfall|precipitation|rain)'
+        r'\s*(?:(?:is\s+)?(?:around|about)|is|=|:|of)?\s*'
+        r'([0-9]+(?:\.[0-9]+)?)\s*mm',
 
+        # "500mm rainfall"
+        # "540 mm annual rainfall"
+        r'([0-9]+(?:\.[0-9]+)?)\s*mm\s*'
+        r'(?:annual\s+)?(?:rainfall|precipitation|rain)',
+
+        # "annual rainfall 540"
+        # "rainfall is 540"
+        r'(?:annual\s+rainfall|annual\s+precipitation|rainfall|precipitation|rain)'
+        r'\s*(?:(?:is\s+)?(?:around|about)|is|=|:|of)?\s*'
+        r'([0-9]+(?:\.[0-9]+)?)'
+    ]
+
+    for pattern in rain_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["climate"]["rainfall"] = float(match.group(1))
+                break
+            except ValueError:
+                pass
+    # ---------------------------------------------------------
     # 5. Temperature
-    temp_match = re.search(r'(?:temperature|temp)\s*(?:is|=|around|about)?\s*([0-9]+(?:\.[0-9]+)?)\s*(?:°c|c|deg|degrees)?', t)
-    if temp_match and "rainfall" not in temp_match.group(0):
-        try:
-            extracted["climate"]["temperature"] = float(temp_match.group(1))
-        except ValueError:
-            pass
+    # ---------------------------------------------------------
+    temp_patterns = [
+        r'(?:mean\s+surface\s+temperature|average\s+temperature|'
+        r'mean\s+temperature|temperature|temp)'
+        r'\s*(?:is|=|:|around|about|of|at)?\s*'
+        r'([0-9]+(?:\.[0-9]+)?)\s*(?:°c|degrees?\s*c|c)?',
 
-    # 6. Land Use Type & Crop
-    if "monoculture" in t:
+        r'([0-9]+(?:\.[0-9]+)?)\s*°c\s*'
+        r'(?:average\s+|mean\s+)?temperature',
+
+        r'([0-9]+(?:\.[0-9]+)?)\s*degrees?\s*c'
+    ]
+
+    for pattern in temp_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["climate"]["temperature"] = float(match.group(1))
+                break
+            except ValueError:
+                pass
+
+    # ---------------------------------------------------------
+    # 6. Land Use Type
+    # ---------------------------------------------------------
+    if "monoculture" in t or "mono-culture" in t:
         extracted["land_use"]["type"] = "monoculture"
+
     elif "agroforestry" in t:
         extracted["land_use"]["type"] = "agroforestry"
-    elif "polyculture" in t or "intercropping" in t or "rotation" in t:
+
+    elif (
+        "polyculture" in t
+        or "poly-culture" in t
+        or "intercropping" in t
+        or "inter-cropping" in t
+        or "crop rotation" in t
+        or "rotation" in t
+    ):
         extracted["land_use"]["type"] = "polyculture"
+
     elif "fallow" in t:
         extracted["land_use"]["type"] = "fallow"
 
-    for crop in ["wheat", "corn", "maize", "soybean", "rice", "cotton", "barley", "canola", "alfalfa", "sugarcane"]:
+    elif "pasture" in t:
+        extracted["land_use"]["type"] = "pasture"
+
+    # ---------------------------------------------------------
+    # 7. Crop
+    # ---------------------------------------------------------
+    crop_names = [
+        "wheat",
+        "corn",
+        "maize",
+        "soybean",
+        "rice",
+        "cotton",
+        "barley",
+        "canola",
+        "alfalfa",
+        "sugarcane",
+        "brachiaria grass",
+        "brachiaria"
+    ]
+
+    for crop in crop_names:
         if crop in t:
             extracted["land_use"]["crop"] = crop
+
+            # If crop is mentioned but no land-use type is given,
+            # preserve the original behavior of treating it as monoculture.
             if "type" not in extracted["land_use"]:
                 extracted["land_use"]["type"] = "monoculture"
+
             break
 
-    # 7. Biodiversity (Species Richness)
-    rich_match = re.search(r'(?:species richness|richness|species count)\s*(?:is|=|:)?\s*([0-9]+)', t)
-    if not rich_match:
-        rich_match = re.search(r'([0-9]+)\s*(?:species|taxa)', t)
-    if rich_match:
-        try:
-            extracted["biodiversity"]["species_richness"] = int(rich_match.group(1))
-        except ValueError:
-            pass
+    # ---------------------------------------------------------
+    # 8. Buffer Strip Width
+    # ---------------------------------------------------------
+    buffer_patterns = [
+        r'(?:buffer\s+strip|field\s+buffer|buffer)'
+        r'\s*(?:width)?\s*(?:is|=|:|of|at)?\s*'
+        r'([0-9]+(?:\.[0-9]+)?)\s*m',
 
-    # 8. Coordinates
-    coord_match = re.search(r'lat(?:itude)?\s*[:=]?\s*([0-9.-]+)\s*,\s*lon(?:gitude)?\s*[:=]?\s*([0-9.-]+)', t)
+        r'([0-9]+(?:\.[0-9]+)?)\s*m\s*'
+        r'(?:buffer\s+strip|field\s+buffer|buffer)'
+    ]
+
+    for pattern in buffer_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["land_use"]["buffer_strip_width_m"] = float(match.group(1))
+                break
+            except ValueError:
+                pass
+
+    # Handle phrases such as "no field buffer" / "no buffer"
+    if (
+        "no field buffer" in t
+        or "no buffer strip" in t
+        or "no buffer" in t
+        or "without a buffer" in t
+        or "without buffer" in t
+    ):
+        extracted["land_use"]["buffer_strip_width_m"] = 0.0
+
+    # ---------------------------------------------------------
+    # 9. Biodiversity - Species Richness
+    # ---------------------------------------------------------
+    richness_patterns = [
+        r'(?:species\s+richness|species\s+count|richness)'
+        r'\s*(?:is|=|:|of)?\s*([0-9]+)',
+
+        r'([0-9]+)\s*(?:observed\s+)?species\b'
+    ]
+
+    for pattern in richness_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["biodiversity"]["species_richness"] = int(match.group(1))
+                break
+            except ValueError:
+                pass
+
+    # ---------------------------------------------------------
+    # 10. Habitat Diversity Index
+    # ---------------------------------------------------------
+    habitat_patterns = [
+        r'(?:habitat\s+diversity|habitat\s+diversity\s+index)'
+        r'\s*(?:is|=|:|of)?\s*([0-9]+(?:\.[0-9]+)?)',
+
+        r'(?:diversity\s+index)'
+        r'\s*(?:is|=|:|of)?\s*([0-9]+(?:\.[0-9]+)?)'
+    ]
+
+    for pattern in habitat_patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                extracted["biodiversity"]["habitat_diversity_index"] = float(match.group(1))
+                break
+            except ValueError:
+                pass
+
+    # ---------------------------------------------------------
+    # 11. Coordinates
+    # ---------------------------------------------------------
+    coord_match = re.search(
+        r'lat(?:itude)?\s*[:=]?\s*([0-9.-]+)'
+        r'\s*,\s*'
+        r'lon(?:gitude)?\s*[:=]?\s*([0-9.-]+)',
+        t
+    )
+
     if coord_match:
         try:
             extracted["location"]["latitude"] = float(coord_match.group(1))
@@ -121,7 +292,6 @@ def extract_variables_from_text(text_input: str) -> Dict[str, Any]:
             pass
 
     return extracted
-
 
 def merge_extracted_variables(base_dict: Dict[str, Any], new_dict: Dict[str, Any]) -> Dict[str, Any]:
     """Recursively merges newly discovered variables into existing profile state."""
