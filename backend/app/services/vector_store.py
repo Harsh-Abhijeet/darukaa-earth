@@ -15,8 +15,14 @@ from backend.app.db.models import DocumentChunk, Document, Citation
 _embedding_model = None
 
 def get_embedding_model():
-    """Lazily loads sentence-transformers embedding model or provides deterministic semantic vectorizer."""
+    """Lazily loads sentence-transformers embedding model unless disabled."""
     global _embedding_model
+
+    # Use lightweight deterministic vectorizer in constrained environments.
+    if os.getenv("DISABLE_EMBEDDING_MODEL", "false").lower() == "true":
+        logger.info("SentenceTransformer disabled; using deterministic semantic vectorizer.")
+        return None
+
     if _embedding_model is not None:
         return _embedding_model
 
