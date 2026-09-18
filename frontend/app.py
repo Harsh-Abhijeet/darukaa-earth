@@ -69,16 +69,53 @@ st.markdown("""
         font-size: 0.85rem;
     }
     .rec-card {
-        border-left: 4px solid #2e7d32;
-        background-color: #ffffff;
-        border-top: 1px solid #e0e0e0;
-        border-right: 1px solid #e0e0e0;
-        border-bottom: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 1.2rem;
-        margin-bottom: 1.2rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+    border-left: 4px solid #2e7d32;
+    background-color: #ffffff;
+    color: #1f2937;
+    border-top: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.rec-card h4 {
+    color: #14532d !important;
+    margin-bottom: 0.8rem;
+}
+
+.rec-card p {
+    color: #1f2937 !important;
+    line-height: 1.6;
+}
+
+.rec-card b {
+    color: #111827 !important;
+}
+
+.rec-card code {
+    color: #14532d !important;
+    background-color: #ecfdf5 !important;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.rec-card .badge-high {
+    background-color: #c6f6d5;
+    color: #22543d !important;
+}
+
+.rec-card .badge-medium {
+    background-color: #feebc8;
+    color: #7b341e !important;
+}
+
+.rec-card .badge-low {
+    background-color: #fed7d7;
+    color: #742a2a !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
