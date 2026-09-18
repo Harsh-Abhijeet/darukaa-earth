@@ -3,7 +3,7 @@
 > **A Multi-Metric AI Environmental Scientist Prototype for the Darukaa.Earth Hackathon.**  
 > Grounded in peer-reviewed agroecological literature and authoritative standards (FAO, IPCC, UNEP, ISRIC SoilGrids, GBIF, NASA POWER).
 
-[![CI/CD Pipeline](https://github.com/darukaa-earth/biodiversity-intelligence/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI/CD Pipeline](https://github.com/Harsh-Abhijeet/darukaa-earth/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL + pgvector](https://img.shields.io/badge/PostgreSQL-16%20%2B%20pgvector-336791.svg)](https://github.com/pgvector/pgvector)
@@ -381,7 +381,7 @@ FastAPI exposes interactive OpenAPI documentation at `http://localhost:8000/docs
 
 ### Step 1: Clone Repository
 ```bash
-git clone https://github.com/darukaa-earth/biodiversity-intelligence.git
+git clone https://github.com/Harsh-Abhijeet/darukaa-earth.git
 cd darukaa-earth
 ```
 
