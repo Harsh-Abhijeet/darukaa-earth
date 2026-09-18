@@ -245,7 +245,7 @@ class Citation(Base):
     source_name = Column(String(255), nullable=False)
     organization = Column(String(128), nullable=False)
     year = Column(Integer, nullable=False)
-    page = Column(String(64), nullable=True)
+    page = Column(String(255), nullable=True)
     url = Column(String(512), nullable=True)
     topic = Column(String(128), nullable=True)
     metric = Column(String(128), nullable=True)
