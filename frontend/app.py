@@ -12,6 +12,7 @@ Conforms to Requirements #15 and #16:
 import streamlit as st
 import httpx
 import json
+import os
 from typing import Dict, Any, List
 
 # Streamlit Page Config
@@ -98,7 +99,10 @@ with st.sidebar:
     st.caption("AI Environmental Scientist & Biodiversity Intelligence")
     st.markdown("---")
 
-    backend_url = st.text_input("Backend API URL", value="http://localhost:8000")
+    backend_url = st.text_input(
+    "Backend API URL",
+    value=os.getenv("BACKEND_URL", "http://localhost:8000")
+)
     
     # Test Backend Connection
     try:
