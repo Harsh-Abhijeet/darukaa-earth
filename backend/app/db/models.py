@@ -227,7 +227,7 @@ class DocumentChunk(Base):
     document_id = Column(String(64), ForeignKey("documents.id"), nullable=False, index=True)
     chunk_index = Column(Integer, nullable=False)
     section_title = Column(String(255), nullable=True)
-    page_number = Column(String(32), nullable=True)
+    page_number = Column(String(255), nullable=True)
     content = Column(Text, nullable=False)
     metric_tags = Column(String(255), nullable=True)
     embedding = Column(AdaptiveVector(dim=384), nullable=True)
